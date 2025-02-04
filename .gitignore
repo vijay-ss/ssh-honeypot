@@ -169,3 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# app files
+venv
+log_files/
+*.key
+*.key.pub
