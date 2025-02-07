@@ -1,9 +1,10 @@
 import os
+import sys
 import socket
 import paramiko
 import threading
-import logging
-from logging.handlers import RotatingFileHandler
+sys.path.append(".")
+from helpers.logger import create_logging_filehandler
 
 SSH_BANNER = "SSH-2.0-MySSHServer_1.0"
 
@@ -13,63 +14,9 @@ cmd_audits_log_filepath = os.path.join(base_dir, "log_files", "cmd_audits.log")
 creds_audits_log_filepath = os.path.join(base_dir, "log_files", "creds_audits.log")
 
 
-def create_logging_filehandler(
-        logger_name: str,
-        log_filepath: str,
-        log_format: str,
-        level = logging.INFO,
-) -> RotatingFileHandler:
-    logging_format = logging.Formatter(log_format)
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(level)
-    log_handler = RotatingFileHandler(log_filepath, maxBytes=2000, backupCount=3)
-    log_handler.setFormatter(logging_format)
-    logger.addHandler(log_handler)
-
-    return logger
-
 funnel_logger = create_logging_filehandler(logger_name="FunnelLogger", log_filepath=cmd_audits_log_filepath, log_format="%(message)s")
 creds_logger = create_logging_filehandler(logger_name="CredsLogger", log_filepath=creds_audits_log_filepath, log_format="%(message)s")
 
-def emulated_shell(channel, client_ip: str):
-    """
-        channel: way to send strings over ssh connection
-    """
-    shell_prompt = b"corporate-jumpbox2$ " # $ means elevated user permissions
-    channel.send(shell_prompt)
-    command = b""
-
-    while True:
-        char = channel.recv(1)
-        channel.send(char)
-        if not char:
-            channel.close()
-        
-        command += char.strip()
-
-        if char == b"\r":
-            if command == b"exit":
-                response = b"\n Goodbye!\n"
-                channel.close()
-            elif command == b"pwd":
-                workdir = os.path.join("user", "local")
-                response = b"\n" + workdir.encode() + b"\r\n"
-                creds_logger.info(f"Command {command} executed by {client_ip}")
-            elif command == b"whoami":
-                response = b"\n" + b"corpuser1" + b"\r\n"
-                creds_logger.info(f"Command {command} executed by {client_ip}")
-            elif command == b"ls":
-                response = b"\n" + b"jumpbox1.conf" + b"\r\n"
-                creds_logger.info(f"Command {command} executed by {client_ip}")
-            elif command == b"cat jumpbox1.conf":
-                response == b"\n" + b"Go to xyz.com" + b"\r\n"
-                creds_logger.info(f"Command {command} executed by {client_ip}")
-            else:
-                response = b"\n" + bytes(command) + b"\r\n"
-                creds_logger.info(f"Command {command} executed by {client_ip}")
-            channel.send(response)
-            channel.send(shell_prompt)
-            command = b""
 
 class Server(paramiko.ServerInterface):
 
@@ -108,6 +55,48 @@ class Server(paramiko.ServerInterface):
         command = str(command)
         return True
 
+
+def emulated_shell(channel, client_ip: str):
+    """
+        channel: way to send strings over ssh connection
+    """
+    shell_prompt = b"corporate-jumpbox2$ "
+    channel.send(shell_prompt)
+    command = b""
+
+    while True:
+        char = channel.recv(1)
+        channel.send(char)
+        if not char:
+            channel.close()
+        
+        command += char.strip()
+
+        if char == b"\r":
+            if command == b"exit":
+                response = b"\n Goodbye!\n"
+                channel.close()
+            elif command == b"pwd":
+                workdir = os.path.join("user", "local")
+                response = b"\n" + workdir.encode() + b"\r\n"
+                creds_logger.info(f"Command {command} executed by {client_ip}")
+            elif command == b"whoami":
+                response = b"\n" + b"corpuser1" + b"\r\n"
+                creds_logger.info(f"Command {command} executed by {client_ip}")
+            elif command == b"ls":
+                response = b"\n" + b"jumpbox1.conf" + b"\r\n"
+                creds_logger.info(f"Command {command} executed by {client_ip}")
+            elif command == b"cat jumpbox1.conf":
+                response == b"\n" + b"Go to xyz.com" + b"\r\n"
+                creds_logger.info(f"Command {command} executed by {client_ip}")
+            else:
+                response = b"\n" + bytes(command) + b"\r\n"
+                creds_logger.info(f"Command {command} executed by {client_ip}")
+            channel.send(response)
+            channel.send(shell_prompt)
+            command = b""
+
+
 def client_handle(client, addr: str, username: str, password: str):
     client_ip = addr[0]
     print(f"{client_ip} has connected to the server.")
@@ -137,6 +126,7 @@ def client_handle(client, addr: str, username: str, password: str):
             print(error)
         client.close()
 
+
 def honeypot(address: str, port: str, username: str, password: str):
     """Listens for ipv4 connection on tcp port.
     """
@@ -154,5 +144,3 @@ def honeypot(address: str, port: str, username: str, password: str):
             ssh_honeypot_thread.start()
         except Exception as error:
             print(error)
-
-honeypot("127.0.0.1", 2223, username=None, password=None)
