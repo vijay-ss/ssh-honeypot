@@ -37,4 +37,4 @@ if __name__ == "__main__":
         else:
             raise Exception("[!] Choose a honeypot type (SSH --ssh) or (HTTP --http).")
     except:
-        print("\n Exiting Honeypy...\n")
+        print("\n Exiting app...\n")
