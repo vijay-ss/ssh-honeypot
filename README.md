@@ -1,6 +1,6 @@
 # ssh-honeypot
 
-A modular, graphic-based honeypot to capture IP Adresses, usernames, passwords, and commands from various protocols (SSH & HTTP supported right now). Written in Python.
+A modular, graphic-based honeypot to capture ip addresses, usernames, passwords, and commands from various protocols (SSH & HTTP supported right now). Written in Python.
 
 # Install
 
