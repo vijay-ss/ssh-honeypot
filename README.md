@@ -1,6 +1,6 @@
-# ssh-honeypot
+# SSH Honeypot
 
-A modular, graphic-based honeypot to capture ip addresses, usernames, passwords, and commands from various protocols (SSH & HTTP supported right now). Written in Python.
+A modular, graphic-based honeypot to capture ip addresses, usernames, passwords, and commands from various protocols (SSH & HTTP supported right now). Written in Python and for educational purposes only.
 
 # Install
 
@@ -64,7 +64,7 @@ There are default credentials accepted, `admin` and `password`. Username and pas
 
 The web-based honeypot runs on port 4000 by default. This can be changed using the `-p / --port` flag option.
 
-## TLDR; commands
+## TLDR; commands to test the module
 
 ```
 # generate server ssh key
